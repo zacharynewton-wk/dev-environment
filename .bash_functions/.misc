@@ -1,0 +1,48 @@
+#!/bin/bash
+
+commandX() {
+  TIMES=$1
+  for ((i=1;i<=TIMES;i++))
+  do
+    eval "$2"
+  done
+}
+
+countToTen() {
+  for var in {1..10}
+  do
+    varLen=${#var}
+    EXTRASPACE=${84-$varLen}
+    spaces=`printf ' %.0s' {1..$EXTRASPACE}`
+    printf "\r$var$spaces"
+    sleep 1
+  done
+  echo ""
+}
+
+countFromTen() {
+  for var in {10..1}
+  do
+    varLen=${#var}
+    EXTRASPACE=${84-$varLen}
+    spaces=`printf ' %.0s' {1..$EXTRASPACE}`
+    printf "\r$var$spaces"
+    sleep 1
+  done
+  echo ""
+}
+
+colorizeRandom() {
+  while read data
+  do
+    NUMBER=$(($RANDOM*255/32767+1)) 
+    COLOR="\033[38;5;${NUMBER}m"
+    echo -e "${COLOR}${data}${NC}"
+  done 
+}
+
+dadJoke() {
+  echo -e "${GREY}---${NC}"
+  curl -H "Accept: text/plain" https://icanhazdadjoke.com/
+  echo ""
+}

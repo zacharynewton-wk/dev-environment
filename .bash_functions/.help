@@ -1,0 +1,50 @@
+#!/bin/bash
+
+setupDockerEnvHelp() {
+  echo -e "
+${BOLD}-------------------------
+Set up Docker environment
+-------------------------${NC}
+  First, make sure Docker is running.
+
+${BOLD}Build environment file${NC}
+${GREY}--------------------------------------------${NC}
+  In the repo, mock a production environment by running 
+  ${GREY}$  ${BLUE}cp env.template .env${NC}
+
+${BOLD}Login to the workiva registry${NC}
+${GREY}--------------------------------------------${NC}
+  The docker image is stored on ${ZESTYGREEN}docker.workiva.net${NC}. 
+  Login via the command line using your github username and gitub docker access token as the password.
+  (Token should be found in your ${ORANGE}.gitconfig${NC} file or can be regenerated at ${ZESTYGREEN}https://dev.workiva.net/profile${NC})
+  ${GREY}$  ${BLUE}docker login -u <github-username> docker.workiva.net${NC}
+
+${BOLD}Setup Docker Network${NC}
+${GREY}--------------------------------------------${NC}
+  First, verify network is setup by running
+  ${GREY}$  ${BLUE}docker network ls${NC}
+  If the ${ORANGE}dev-portal${NC} network is not available, set it up with
+  ${GREY}$  ${BLUE}docker network create --driver bridge dev-portal${NC}
+
+${BOLD}Pull the development image${NC}
+${GREY}--------------------------------------------${NC}
+  ${GREY}$  ${BLUE}make pull${NC}
+
+${BOLD}Install Go dependencies${NC}
+${GREY}--------------------------------------------${NC}
+  ${GREY}$  ${BLUE}make deps${NC}
+
+${BOLD}Run it${NC}
+${GREY}--------------------------------------------${NC}
+Refer to the ${ORANGE}Makefile${NC} for more detailed information on almost all commands.
+Commonly used commands:
+  ${GREY}$  ${BLUE}make build-go${NC}
+  ${GREY}$  ${BLUE}make test${NC}
+  ${GREY}$  ${BLUE}make run ${GREY}#(CTRL-C to quit)${NC}
+  ${GREY}$  ${BLUE}make run-nobuild ${GREY}#(CTRL-C to quit)${NC}
+
+${BOLD}Test it${NC}
+  ${GREY}$  ${BLUE}curl -i http://localhost:5001/v0/health${NC}
+
+"
+}

@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# --------
+#  Useful
+# --------
+
+gitContributions() {
+  for var in "$@"; do 
+    echo "$var Contributions:"
+    git log --author="$var" --pretty=tformat: --numstat | awk '{ add += $1; subs += $2; loc += $1 - $2 } END { printf "  added lines: \033[38;5;84m+%s\033[0m\n  removed lines: \033[38;5;197m-%s\033[0m\n  total lines: \033[38;5;45m%s\033[0m\n", add, subs, loc }' -
+  done
+}
+
+renameBranch() {
+  if [ "$1" == "-h" ]; then
+    echo '''
+Usage: renameBranch [-h] [-|currentBranchName] [newBranchName]
+
+Options:
+  -h : Show this help text
+
+Current Branch Name:
+  The first argument can be either a "-" or a branch name from the current repository.
+  "-" will rename the currently checked out branch.
+
+New Branch Name:
+  The second argument is what the branch will be renamed to.
+  
+'''
+    return
+  fi
+  if [ "$1" == "-" ]
+  then
+    BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+  else
+    BRANCH="$1"
+  fi
+  git branch -m "$BRANCH" "$2"
+  REMOTE_ORIGIN_EXISTS=$(git ls-remote --heads origin $BRANCH | wc -l)
+  REMOTE_ORIGIN_EXISTS="$(echo -e "${REMOTE_ORIGIN_EXISTS}" | tr -d '[:space:]')"
+  if [ "$REMOTE_ORIGIN_EXISTS" == "1" ]
+  then
+    git branch origin :"$BRANCH" "$2"
+    git branch origin -u "$2"
+  fi
+  echo -e "${BLUE}${BRANCH}${NC} renamed to ${BLUE}${2}${NC}"
+}
+
+# ---------
+#  Parsing
+# ---------
+
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+# Returns "|unmerged:N" where N is the number of unmerged local and remote
+# branches (if any).
+parse_git_unmerged() {
+  local unmerged=`expr $(git branch --no-color -a --no-merged | wc -l)`
+  if [ "$unmerged" != "0" ]
+  then
+    echo "|unmerged:$unmerged"
+  fi
+}
+# Returns "|unpushed:N" where N is the number of unpushed local and remote
+# branches (if any).
+parse_git_unpushed() {
+  local unpushed=`expr $( (git branch --no-color -r --contains HEAD; \
+    git branch --no-color -r) | sort | uniq -u | wc -l )`
+  if [ "$unpushed" != "0" ]
+  then
+    echo "|unpushed:$unpushed"
+  fi
+}
+# Returns "*" if the current git branch is dirty.
+parse_git_dirty() {
+  [[ $(git diff --shortstat 2> /dev/null | tail -n1) != "" ]] && echo "*"
+}
+# Returns "|stashed:N" where N is the number of stashed states (if any).
+parse_git_stash() {
+  local stash=`expr $(git stash list 2>/dev/null| wc -l)`
+  if [ "$stash" != "0" ]
+  then
+    echo "|stashed:$stash"
+  fi
+}
+# Get the current git branch name (if available)
+git_prompt() {
+    echo "($(parse_git_branch)$(parse_git_dirty)$(parse_git_stash)) " #$(parse_git_unmerged)$(parse_git_unpushed)) "
+}

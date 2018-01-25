@@ -1,4 +1,9 @@
 #!/bin/bash
 
+# -----
+#  GIT
+# -----
+
 GIT_USERNAME="zacharynewton-wk"
 GIT_EMAIL="zachary.newton@workiva.com"
+GIT_EDITOR="vim"

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+bigskySetupHelp() {
+  echo -e "
+Before trying to build, make sure you've run:
+- ${BLUE}beforeBigsky ${GREY}# defined in ~/.bash_functions${NC}
+- ${BLUE}pycleaner ${GREY}# for after pulls or moving files around${NC}
+- ${BLUE}pip install -e .${NC}
+- ${BLUE}pip install -r requirements_dev.txt ${GREY}# probably not necessary${NC}
+- ${BLUE}ant link-libs ${GREY}# possibly called in ant full${NC}
+To build, run either:
+- ${BLUE}ant full ${GREY}# full bigsky build${NC}
+- ${BLUE}ant quick ${GREY}# flex lazy build${NC}
+To run bigsky:
+- Call ${BLUE}runbigsky ${GREY}# defined in ~/.bash_aliases${NC}
+- Go to ${ORANGE}localhost:8080${NC}
+- Login with 
+    - ${GREY}Username: ${NC}zach.newton@workiva.com
+    - ${GREY}Password: ${NC}zach
+- If login fails, be sure to run ${BLUE}reset_ds${NC}
+"
+}
+
+beforeBigsky() {
+  # virtualenvwrapper
+  # Don't let Mac python (in /usr/bin) supercede brew's python (/usr/local/bin)
+  echo "Setting virtual environment python wrapper..."
+  export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
+
+  # Sets the working directory for all virtualenvs
+  echo "Setting virtual environment home directory"
+  export WORKON_HOME=$HOME/.virtualenvs
+
+  # Sources the virtualenvwrapper so all the commands are available in the shell
+  echo "Sourcing virtual environment wrapper..."
+  source /usr/local/bin/virtualenvwrapper.sh
+
+  # Node Version Manager CL access
+  echo "Managing node version..."
+  export NVM_DIR=~/.nvm
+  . $(brew --prefix nvm)/nvm.sh
+
+  # Expand Maven memory
+  echo "Expanding Maven memory permissions..."
+  export MAVEN_OPTS="-Xmx4096m -Xss1024m -XX:MaxPermSize=128m"
+
+  # Set M2_HOME
+  echo "Setting Maven home..."
+  M2_HOME="/usr/local/Cellar/maven30/3.0.5/libexec"
+
+  # Set virtual environment
+  echo "Working on virtual environment \"Sky\""
+  workon sky
+}
+
+cleanBigskyBuild() {
+  echo "Cleaning python..."
+  pycleaner
+  echo "Installing environment dependencies..."
+  pip install -e .
+  echo "Installing dev requirements..."
+  pip install -r requirements_dev.txt
+  echo "Building bigsky..."
+  ant full
+}

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+HOME_DIR="$1"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="~/hometest"
+fi

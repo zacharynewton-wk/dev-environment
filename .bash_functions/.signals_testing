@@ -1,0 +1,129 @@
+#!/bin/bash
+
+testJSON() {
+  echo -e "
+{
+  \"hello\": \"world\",
+  \"string\": \"string\",
+  \"type\": \"print\",
+  \"number\": 40,
+  \"boolean\": true,
+  \"object\": {
+    \"value1\": 1,
+    \"value2\": \"2\"
+  }
+}{
+  \"hello\": \"world\",
+  \"string\": \"word\",
+  \"type\": \"error\",
+  \"number\": 41,
+  \"boolean\": false
+}{
+  \"hello\": \"world\",
+  \"string\": \"two words\",
+  \"type\": \"print\",
+  \"number\": 42,
+  \"boolean\": false
+}
+"
+}
+
+colorizeJSON() {
+  sedKeyReg='\(.*\)\(".*"\)\(:.*\)'
+  sedStringReg='\(.*".*".*: \)\(".*"\)\(.*\)'
+  sedNumberReg='\(.*".*".*: \)\([0-9][0-9]*\)\([^"]*\)'
+  declare -a sedRegexps ; declare -a replacecolors
+  sedRegexps[0]="$sedKeyReg" ; replacecolors[0]="$JSON_KEY_COLOR"
+  sedRegexps[1]="$sedStringReg" ; replacecolors[1]="$JSON_STRING_COLOR"
+  sedRegexps[2]="$sedNumberReg" ; replacecolors[2]="$JSON_NUMBER_COLOR"
+  while read
+  do
+    data="$REPLY"
+    for ((i=0;i<${#sedRegexps[@]};++i))
+    do
+      keyColor="${replacecolors[$i]}"
+      keyRegexp=${sedRegexps[$i]}
+      data=$(sed "s/$keyRegexp/\\1${keyColor}\\2${ESCAPED_NC}\\3/g" <<< "$data")
+    done
+    printf "$data\n"
+  done
+}
+
+formatJSON() {
+  CURRENT_OBJ=""
+  errorRegexp=".*\"type\"\: \"error\".*" 
+  while read
+  do
+    data="$REPLY"
+    if [ "$data" == "}{" ] || [ "$data" == "}" ]
+    then
+      if [[ $CURRENT_OBJ =~ $errorRegexp ]]
+      then
+        JSON_KEY_COLOR="$ESCAPED_RED"
+      fi
+      printf "{$CURRENT_OBJ}" | prettyjson | colorizeJSON
+      JSON_KEY_COLOR="$ESCAPED_SOFTGREEN"
+      CURRENT_OBJ=""
+    elif [ "$data" != "{" ]
+    then
+      CURRENT_OBJ="$CURRENT_OBJ $data"
+    fi
+  done
+}
+
+asigtest1() {
+  export AUTO_URL="https://admin.wk-dev.wdesk.org/a/QWNjb3VudB81NzA2MTc2MDkzMjI0OTYw/recent"
+  # Parse args
+  for arg in "$@"
+  do
+    case $arg in
+    --help|-h) # Show asigtest help
+      echo -e " 
+usage: asigtest [--local | -l] [--help | -h]
+
+Run admin_client signals tests.
+
+${GREEN}[no args]${NC}: runs tests on admin.wk-dev.wdesk.org
+${GREEN}  --local${NC}: runs tests on localhost:8080
+${GREEN}   --help${NC}: shows this help dialogue
+
+NOTES:
+ - Sauce credentials
+   - Make sure your SauceLabs credentials are exported to environment variables
+     - ${BLUE}export SAUCE_USERNAME=\"username\"${NC}
+     - ${BLUE}export SAUCE_ACCESS_KEY=\"sauce-labs-generated-access-key\"${NC}
+ - To run locally, make sure you do the following:
+   - Terminal Tab 1: run ${BLUE}ddev serve${NC}
+   - Terminal Tab 2: run ${BLUE}sc${NC}
+   - Terminal Tab 3: run ${BLUE}dartiumc${NC}
+   - Open dartium and go to ${BLUE}localhost:8080${NC}, wait for page to load
+   - Terminal Tab 4: run ${BLUE}asigtest --local${NC}
+"
+      return
+      ;;
+    --local|-l) # Run tests locally
+      export AUTO_URL="http://localhost:8080/a/QWNjb3VudB81NzA2MTc2MDkzMjI0OTYw/recent"
+      ;;
+    esac
+  done
+  # Run tests
+  if hash ac 2>/dev/null; then
+    ac # Run 'ac' alias if it exists to navigate into admin_client
+  fi
+  # Navigate into signals test folder  
+  cd test/signals/
+  export TEST_SERVER="wkdev"
+  export WDESK_USERNAME='ws_user1'
+  export WDESK_PASSWORD='W0rkiva!'
+  # Get signals dependencies
+  pub get
+  pub run w_webdriver_utils:wd_runner --no-tunnel -r --browser-name 'chrome' --version 'latest-1' -p 'Windows 7' --report-directory ~/workspaces/testing/test-reports/chrome/ test/ | formatJSON
+  printf "\n"
+  if hash ac 2>/dev/null; then
+    ac # If 'ac' alias exists, navigate back to admin_client
+  else
+    cd ../.. # Otherwise, just go back up from test/signals directory
+  fi
+  printf "${GREEN}Tests Completed${NC}\n"
+  printf "Run into strange ${RED}errors${NC}? Not sure the tests ran correctly? Try running ${BLUE}asigtest -h${NC} for help on getting everything set up\n" 
+}
