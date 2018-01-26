@@ -1,7 +1,10 @@
 #!/bin/bash
 
-
-HOME_DIR="$1"
+HOME_DIR="$2"
 if [ -z "$HOME_DIR" ]; then
     HOME_DIR="~/hometest"
 fi
+FILE_TO_REPLACE="$1"
+echo "Replacing $HOME_DIR/$FILE_TO_REPLACE with ./$FILE_TO_REPLACE"
+rm "$HOME_DIR/$FILE_TO_REPLACE"
+cp "./$FILE_TO_REPLACE" "$HOME_DIR/$FILE_TO_REPLACE"
